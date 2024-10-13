@@ -1,11 +1,15 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Webcam from 'react-webcam';
+import { useNavigate } from 'react-router-dom';  // Importez useNavigate pour la redirection
+
 
 const LoginPage = () => {
   const [image, setImage] = useState(null);
   const [authResult, setAuthResult] = useState('');
   const [userInfo, setUserInfo] = useState(null); // Stocker les infos de l'utilisateur authentifié
+  const [isWebcamVisible, setIsWebcamVisible] = useState(true); // Contrôle la visibilité de la webcam
   const webcamRef = useRef(null);
+  const navigate = useNavigate();
 
   // Capture l'image depuis la webcam et la transforme en Blob
   const capture = () => {
@@ -16,18 +20,20 @@ const LoginPage = () => {
       .then(res => res.blob())
       .then(blob => {
         setImage(blob);  // Enregistre l'image capturée sous forme de Blob
+        setIsWebcamVisible(false);  // Cache la webcam après la capture
+        handleAuth(blob);  // Lancer l'authentification immédiatement après la capture
       });
   };
 
   // Envoie l'image capturée au backend pour authentification
-  const handleAuth = async () => {
-    if (!image) {
+  const handleAuth = async (capturedImage) => {
+    if (!capturedImage) {
       setAuthResult('Aucune image capturée');
       return;
     }
 
     const formData = new FormData();
-    formData.append('image', image, 'capture.jpg'); // Ajout d'un nom de fichier par défaut
+    formData.append('image', capturedImage, 'capture.jpg'); // Ajout d'un nom de fichier par défaut
 
     try {
       const response = await fetch('http://localhost:8000/utilisateur/authenticate-face/', {
@@ -44,6 +50,12 @@ const LoginPage = () => {
       if (data.user_info) {
         setUserInfo(data.user_info);  // Stocke les informations de l'utilisateur
         setAuthResult(data.message);  // Affiche le message d'authentification réussie
+        
+        // Rediriger vers la page dashboard après 2 secondes
+        setTimeout(() => {
+          navigate('/dashboard');  // Redirige vers la page "dashboard"
+        }, 2000);
+      
       } else {
         setAuthResult(data.message);  // Affiche le message d'échec d'authentification
       }
@@ -52,23 +64,34 @@ const LoginPage = () => {
     }
   };
 
+  // Capture automatiquement après 5 secondes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (webcamRef.current) {
+        capture();
+      }
+    }, 5000);  // Capture après 5 secondes
+
+    return () => clearTimeout(timer);  // Nettoie le timer si le composant est démonté
+  }, []);
+
   return (
     <div>
       <h1>Authentification Faciale</h1>
-      <Webcam
-        audio={false}
-        ref={webcamRef}
-        screenshotFormat="image/jpeg"
-        width={320}
-        height={240}
-      />
-      <button onClick={capture}>Capturer l'image</button>
+      {isWebcamVisible && (
+        <Webcam
+          audio={false}
+          ref={webcamRef}
+          screenshotFormat="image/jpeg"
+          width={320}
+          height={240}
+        />
+      )}
 
       {image && (
         <div>
           <h2>Image Capturée :</h2>
           <img src={URL.createObjectURL(image)} alt="Image capturée" />
-          <button onClick={handleAuth}>Authentifier</button>
         </div>
       )}
 
