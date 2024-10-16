@@ -1,0 +1,9 @@
+pip install python-barcode
+djangorestframework
+face_recognition
+dlib
+opencv-python
+apt-get install libzbar-dev
+pip install zbarlight
+pip install Pillow
+
