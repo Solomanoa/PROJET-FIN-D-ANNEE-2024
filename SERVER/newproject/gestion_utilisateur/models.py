@@ -1,5 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from qrcode import make
+from io import BytesIO
+from django.core.files import File
+import qrcode
 
 # Modèle principal Utilisateur
 class Utilisateur(AbstractBaseUser):
@@ -32,7 +36,29 @@ class Utilisateur(AbstractBaseUser):
 # Sous-classe Etudiant
 class Etudiant(models.Model):
     utilisateur = models.OneToOneField(Utilisateur, on_delete=models.CASCADE)
-    carte_etudiant = models.ImageField(upload_to='barrecode/', null=True, blank=True)
+    carte_etudiant = models.ImageField(upload_to='qrcodes/', null=True, blank=True)  # Utilisation de QR code
+
+    def generate_qr_code(self):
+        # Contenu du QR code (par exemple, les infos de l'utilisateur)
+        qr_data = f"ID:{self.utilisateur.id} | Nom:{self.utilisateur.nom}"
+
+        # Générer le QR code
+        qr_img = qrcode.make(qr_data)
+
+        # Sauvegarder le QR code en mémoire
+        buffer = BytesIO()
+        qr_img.save(buffer, format='PNG')
+        buffer.seek(0)
+
+        # Sauvegarder l'image QR dans carte_etudiant
+        filename = f"qr_code_etudiant_{self.utilisateur.id}.png"
+        self.carte_etudiant.save(filename, File(buffer), save=False)
+
+    def save(self, *args, **kwargs):
+        # Générer et sauvegarder le QR code avant de sauvegarder l'objet
+        if not self.carte_etudiant:
+            self.generate_qr_code()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Étudiant : {self.utilisateur.nom} {self.utilisateur.prenom}"

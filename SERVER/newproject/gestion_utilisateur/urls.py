@@ -6,6 +6,7 @@ from .views import (
     update_utilisateur,
     delete_utilisateur,
     authenticate_face,
+    authentification_empreinte,
 )
 
 urlpatterns = [
@@ -15,4 +16,5 @@ urlpatterns = [
     path('utilisateurs/update/<int:id>/', update_utilisateur, name='update_utilisateur'),  # Mettre à jour un utilisateur
     path('utilisateurs/delete/<int:id>/', delete_utilisateur, name='delete_utilisateur'),  # Supprimer un utilisateur
     path('authenticate-face/', authenticate_face, name='authenticate_face'),  # Route d'authentification faciale
+    path('authentification_empreinte/', authentification_empreinte, name='authentification_empreinte'),
 ]

@@ -13,7 +13,9 @@ from .serializer import (
     ResponsablePedagogiqueSerializer,
 )
 import base64
-
+import zbarlight
+from PIL import Image
+from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from PIL import Image
@@ -21,6 +23,7 @@ import barcode
 from barcode.writer import ImageWriter
 from io import BytesIO
 from django.core.files import File
+import hashlib
 import io
 import os
 
@@ -50,6 +53,14 @@ def get_utilisateurs(request):
 @api_view(['POST'])
 def create_utilisateur(request):
     data = request.data
+    """
+    empreinte_digitale = request.FILES.get('empreinte_digitale')  # Récupère le fichier binaire s'il est présent
+    
+    # Convertir le fichier en binaire
+    if empreinte_digitale:
+        empreinte_digitale_data = empreinte_digitale.read()
+        data['empreinte_digitale'] = empreinte_digitale_data
+    """
     serializer = UtilisateurSerializer(data=data)
     
     if serializer.is_valid():
@@ -57,24 +68,15 @@ def create_utilisateur(request):
 
        # Créer un objet en fonction du type
         if utilisateur.type == 'etudiant':
-            # Générer un code-barres pour l'étudiant (par exemple en utilisant son ID utilisateur)
-            EAN = barcode.get_barcode_class('ean13')
-            ean = EAN(f'{utilisateur.id:012}', writer=ImageWriter())
-
-            # Générer l'image dans un buffer en mémoire
-            buffer = BytesIO()
-            ean.write(buffer)
-
-            # Créer un objet Étudiant et ajouter le code-barres dans carte_etudiant
-            etudiant_data = {'utilisateur': utilisateur.id}
+        
+            etudiant_data = {
+                'utilisateur': utilisateur.id
+            }
             etudiant_serializer = EtudiantSerializer(data=etudiant_data)
-            
-            if etudiant_serializer.is_valid(raise_exception=True):  # Validation ici
-                etudiant = etudiant_serializer.save()
+            if etudiant_serializer.is_valid(raise_exception=True):
+                etudiant_serializer.save()
 
-                # Sauvegarder l'image du code-barres dans le champ carte_etudiant
-                etudiant.carte_etudiant.save(f'etudiant_{utilisateur.id}_barcode.png', File(buffer), save=True)
-
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         elif utilisateur.type == 'enseignant':
             enseignant_data = {'utilisateur': utilisateur.id, 'titre': data.get('titre')}
             enseignant_serializer = EnseignantSerializer(data=enseignant_data)
@@ -183,4 +185,62 @@ def authenticate_face(request):
     return JsonResponse({'message': 'Méthode non autorisée'}, status=405)
 
 
+@api_view(['POST'])
+def authenticate_barcode(request):
+    if 'barcode_image' not in request.FILES:
+        return Response({"error": "Aucune image de code-barres fournie."}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Charger l'image soumise
+    image = Image.open(request.FILES['barcode_image'])
 
+    # Convertir l'image pour le décodage
+    image = image.convert('L')  # Convertir l'image en niveaux de gris pour faciliter le décodage
+    codes = zbarlight.scan_codes('ean13', image)  # Décoder l'image
+
+    if not codes:
+        return Response({"error": "Code-barres non reconnu."}, status=status.HTTP_400_BAD_REQUEST)
+    
+    barcode_value = codes[0].decode('utf-8')  # Le contenu du code-barres décodé
+
+    # Rechercher un étudiant avec ce code-barres (on suppose que c'est son ID utilisateur)
+    etudiant = get_object_or_404(Etudiant, utilisateur__id=barcode_value)
+    
+    # Retourner une réponse avec l'étudiant authentifié
+    return Response({
+        "message": "Authentification réussie",
+        "etudiant": {
+            "nom": etudiant.utilisateur.nom,
+            "prenom": etudiant.utilisateur.prenom,
+            "email": etudiant.utilisateur.email,
+        }
+    }, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def authentification_empreinte(request):
+    # Récupérer l'empreinte digitale soumise
+    empreinte_digitale_soumise = request.FILES.get('empreinte_digitale')
+
+    if not empreinte_digitale_soumise:
+        return Response({"error": "Aucune empreinte digitale soumise."}, status=400)
+
+    # Lire les données binaires
+    empreinte_digitale_soumise_data = empreinte_digitale_soumise.read()
+
+    # Calculer un hash de l'empreinte digitale soumise pour comparaison (ou utiliser directement les données binaires)
+    empreinte_hash_soumise = hashlib.sha256(empreinte_digitale_soumise_data).hexdigest()
+
+    # Parcourir tous les utilisateurs et vérifier si l'empreinte soumise correspond
+    for utilisateur in Utilisateur.objects.all():
+        if utilisateur.empreinte_digitale:
+            # Calculer un hash de l'empreinte stockée pour comparaison
+            empreinte_hash_stockee = hashlib.sha256(utilisateur.empreinte_digitale).hexdigest()
+            if empreinte_hash_soumise == empreinte_hash_stockee:
+                # Authentification réussie - retourner les informations de l'utilisateur
+                serializer = UtilisateurSerializer(utilisateur)
+                return Response({
+                    "message": "Authentification réussie.",
+                    "utilisateur": serializer.data  # Retourne les informations utilisateur
+                })
+
+    # Si aucune correspondance n'est trouvée
+    return Response({"error": "Authentification échouée."}, status=400)

@@ -6,4 +6,5 @@ opencv-python
 apt-get install libzbar-dev
 pip install zbarlight
 pip install Pillow
+pip install qrcode[pil]
 

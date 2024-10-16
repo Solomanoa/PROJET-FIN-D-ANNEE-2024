@@ -11,6 +11,18 @@ class EtudiantSerializer(serializers.ModelSerializer):
         model = Etudiant
         fields = ['carte_etudiant', 'utilisateur']
 
+        def create(self, validated_data):
+            # Créer l'étudiant
+            etudiant = Etudiant.objects.create(**validated_data)
+
+            # Générer le QR code pour l'étudiant
+            etudiant.generate_qr_code()
+
+            # Sauvegarder avec le QR code généré
+            etudiant.save()
+
+            return etudiant
+
 class EnseignantSerializer(serializers.ModelSerializer):
     class Meta:
         model = Enseignant
