@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'User',
     'gestion_utilisateur',
+    'evaluation',
 ]
 
 MIDDLEWARE = [
