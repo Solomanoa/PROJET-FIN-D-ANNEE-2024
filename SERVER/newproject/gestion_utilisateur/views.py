@@ -1,4 +1,5 @@
 from rest_framework.decorators import api_view
+from django.db.models import Q
 from rest_framework.response import Response
 from django.conf import settings
 from rest_framework import status
@@ -16,13 +17,33 @@ import base64
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from PIL import Image
+import barcode
+from barcode.writer import ImageWriter
+from io import BytesIO
+from django.core.files import File
 import io
 import os
 
 # Récupérer tous les utilisateurs
 @api_view(['GET'])
 def get_utilisateurs(request):
+   
+    search_query = request.query_params.get('search', None)  # Le champ de recherche unique
+
     utilisateurs = Utilisateur.objects.all()
+
+    if search_query:
+        # Appliquer des filtres sur plusieurs champs
+        utilisateurs = utilisateurs.filter(
+            Q(nom__icontains=search_query) |    # Rechercher dans le nom
+            Q(prenom__icontains=search_query) | # Rechercher dans le prénom
+            Q(email__icontains=search_query) |  # Rechercher dans l'email
+            Q(pseudo__icontains=search_query) | # Rechercher dans le pseudo
+            Q(tel__icontains=search_query) |    # Rechercher dans le numéro de téléphone
+            Q(matricule__icontains=search_query) |  # Rechercher dans le matricule
+            Q(type__icontains=search_query)     # Rechercher dans le type (admin, étudiant, etc.)
+        )
+
     serialized_data = UtilisateurSerializer(utilisateurs, many=True).data
     return Response(serialized_data)
 
@@ -34,12 +55,25 @@ def create_utilisateur(request):
     if serializer.is_valid():
         utilisateur = serializer.save()  # Crée l'utilisateur
 
-        # Créer un objet en fonction du type
+       # Créer un objet en fonction du type
         if utilisateur.type == 'etudiant':
-            etudiant_data = {'utilisateur': utilisateur.id, 'carte_etudiant': data.get('carte_etudiant')}
+            # Générer un code-barres pour l'étudiant (par exemple en utilisant son ID utilisateur)
+            EAN = barcode.get_barcode_class('ean13')
+            ean = EAN(f'{utilisateur.id:012}', writer=ImageWriter())
+
+            # Générer l'image dans un buffer en mémoire
+            buffer = BytesIO()
+            ean.write(buffer)
+
+            # Créer un objet Étudiant et ajouter le code-barres dans carte_etudiant
+            etudiant_data = {'utilisateur': utilisateur.id}
             etudiant_serializer = EtudiantSerializer(data=etudiant_data)
+            
             if etudiant_serializer.is_valid(raise_exception=True):  # Validation ici
-                etudiant_serializer.save()
+                etudiant = etudiant_serializer.save()
+
+                # Sauvegarder l'image du code-barres dans le champ carte_etudiant
+                etudiant.carte_etudiant.save(f'etudiant_{utilisateur.id}_barcode.png', File(buffer), save=True)
 
         elif utilisateur.type == 'enseignant':
             enseignant_data = {'utilisateur': utilisateur.id, 'titre': data.get('titre')}
@@ -147,3 +181,6 @@ def authenticate_face(request):
         return JsonResponse({'message': 'Aucun utilisateur correspondant trouvé'}, status=404)
 
     return JsonResponse({'message': 'Méthode non autorisée'}, status=405)
+
+
+

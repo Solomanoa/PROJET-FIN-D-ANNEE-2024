@@ -32,7 +32,7 @@ class Utilisateur(AbstractBaseUser):
 # Sous-classe Etudiant
 class Etudiant(models.Model):
     utilisateur = models.OneToOneField(Utilisateur, on_delete=models.CASCADE)
-    carte_etudiant = models.ImageField(upload_to='images/', null=True, blank=True)
+    carte_etudiant = models.ImageField(upload_to='barrecode/', null=True, blank=True)
 
     def __str__(self):
         return f"Étudiant : {self.utilisateur.nom} {self.utilisateur.prenom}"
