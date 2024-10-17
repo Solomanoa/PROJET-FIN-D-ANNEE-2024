@@ -64,17 +64,15 @@ const LoginPage = () => {
     }
   };
 
-  // Capture automatiquement après 5 secondes
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const interval = setInterval(() => {
       if (webcamRef.current) {
         capture();
       }
-    }, 5000);  // Capture après 5 secondes
-
-    return () => clearTimeout(timer);  // Nettoie le timer si le composant est démonté
+    }, 5000);  // Capture toutes les 5 secondes
+  
+    return () => clearInterval(interval);  // Nettoie l'intervalle si le composant est démonté
   }, []);
-
   return (
     <div>
       <h1>Authentification Faciale</h1>
@@ -88,13 +86,7 @@ const LoginPage = () => {
         />
       )}
 
-      {image && (
-        <div>
-          <h2>Image Capturée :</h2>
-          <img src={URL.createObjectURL(image)} alt="Image capturée" />
-        </div>
-      )}
-
+      
       {authResult && <p>{authResult}</p>}
 
       {/* Affichage des informations de l'utilisateur authentifié */}

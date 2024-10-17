@@ -5,6 +5,9 @@ const WelcomePage = () => {
   return (
     <div>
       <h1>Bienvenue sur notre application !</h1>
+      <Link to="/loginqrcode">
+        <button>S'authentifier par qrcode</button>
+      </Link>
       <Link to="/login">
         <button>S'authentifier</button>
       </Link>
