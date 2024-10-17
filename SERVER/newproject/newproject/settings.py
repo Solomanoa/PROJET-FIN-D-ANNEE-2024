@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'User',
     'gestion_utilisateur',
     'evaluation',
+    'notification',
 ]
 
 MIDDLEWARE = [

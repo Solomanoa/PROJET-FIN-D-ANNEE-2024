@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import get_evaluations, get_evaluation, create_evaluation, update_evaluation, delete_evaluation
+from .views import get_evaluations, get_evaluation, create_evaluation, update_evaluation, delete_evaluation,calculer_notes_totales
 
 urlpatterns = [
     path('evaluations/', get_evaluations, name='get_evaluations'),
@@ -7,4 +7,5 @@ urlpatterns = [
     path('evaluations/create/', create_evaluation, name='create_evaluation'),
     path('evaluations/update/<int:id>/', update_evaluation, name='update_evaluation'),
     path('evaluations/delete/<int:id>/', delete_evaluation, name='delete_evaluation'),
+    path('evaluations/notes_totales/', calculer_notes_totales, name='calculer_notes_totales'),
 ]

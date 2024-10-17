@@ -244,3 +244,35 @@ def authentification_empreinte(request):
 
     # Si aucune correspondance n'est trouvée
     return Response({"error": "Authentification échouée."}, status=400)
+
+@api_view(['POST'])
+def authenticate_qrcode(request):
+    qr_data = request.data.get('qr_data')
+    
+    if qr_data:
+        # Extraire l'ID de l'utilisateur à partir des données du QR code
+        user_id = extract_user_id(qr_data)  # Implémentez cette fonction selon vos données
+
+        try:
+            etudiant = Etudiant.objects.get(utilisateur__id=user_id)
+            # Authentification réussie
+            user_info = {
+                'id': etudiant.utilisateur.id,
+                'nom': etudiant.utilisateur.nom,
+                'prenom': etudiant.utilisateur.prenom,
+                # Ajoutez d'autres champs si nécessaire
+            }
+            return Response(user_info, status=status.HTTP_200_OK)
+        except Etudiant.DoesNotExist:
+            return Response({'error': 'Utilisateur non trouvé.'}, status=status.HTTP_404_NOT_FOUND)
+    return Response({'error': 'Données QR invalides.'}, status=status.HTTP_400_BAD_REQUEST)
+
+def extract_user_id(qr_data):
+    # Cette fonction doit extraire l'ID de l'utilisateur du QR code
+    # Par exemple, si votre QR code est sous la forme "ID:1 | Nom:John", 
+    # alors vous pouvez faire le parsing ici.
+    parts = qr_data.split('|')
+    for part in parts:
+        if part.startswith('ID:'):
+            return int(part.split(':')[1].strip())
+    return None

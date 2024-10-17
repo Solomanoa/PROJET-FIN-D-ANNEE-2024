@@ -4,7 +4,8 @@ from django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Evaluation
+from .models import Evaluation, Enseignant
+from django.db.models import Sum
 from .serializer import EvaluationSerializer
 
 # Récupérer toutes les évaluations
@@ -58,3 +59,25 @@ def delete_evaluation(request, id):
         return Response({'message': 'Évaluation supprimée avec succès'}, status=status.HTTP_204_NO_CONTENT)
     except Evaluation.DoesNotExist:
         return Response({'message': 'Évaluation non trouvée'}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['GET'])
+def calculer_notes_totales(request):
+    # Récupérer toutes les notes par enseignant
+    resultats = (
+        Evaluation.objects
+        .values('enseignant')  # Regrouper par enseignant
+        .annotate(total_notes=Sum('note'))  # Calculer la somme des notes
+    )
+
+    # Formater les résultats
+    notes_totales = []
+    for resultat in resultats:
+        enseignant_id = resultat['enseignant']
+        total = resultat['total_notes']
+        enseignant = Enseignant.objects.get(id=enseignant_id)
+        notes_totales.append({
+            'enseignant': str(enseignant),  # Ou vous pouvez ajouter plus d'infos sur l'enseignant
+            'total_notes': total if total else 0  # Si aucune note, mettre à 0
+        })
+
+    return Response(notes_totales)
