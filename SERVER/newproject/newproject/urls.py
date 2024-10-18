@@ -23,5 +23,7 @@ urlpatterns = [
     path('user/', include('User.urls')),
     path('utilisateur/', include('gestion_utilisateur.urls')),
     path('notification/', include('notification.urls')),
+    path('enseigner/', include('enseigner.urls')),
+    path('recommendation/', include('recommendation.urls')),
 ]
 

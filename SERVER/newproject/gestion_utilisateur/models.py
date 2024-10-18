@@ -37,9 +37,16 @@ class Utilisateur(AbstractBaseUser):
 class Etudiant(models.Model):
     utilisateur = models.OneToOneField(Utilisateur, on_delete=models.CASCADE)
     carte_etudiant = models.ImageField(upload_to='qrcodes/', null=True, blank=True)  # Utilisation de QR code
+    niveau = models.CharField(max_length=20, choices=[
+        ('L1', 'L1'),
+        ('L2', 'L2'),
+        ('L3', 'L3'),
+        ('M1', 'M1'),
+        ('M2', 'M2'),
+    ])
 
     def generate_qr_code(self):
-        # Contenu du QR code (par exemple, les infos de l'utilisateur)
+        # Contenu du QR code 
         qr_data = f"ID:{self.utilisateur.id} | Nom:{self.utilisateur.nom}"
 
         # Générer le QR code

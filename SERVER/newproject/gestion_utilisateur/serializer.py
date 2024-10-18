@@ -4,14 +4,14 @@ from .models import Utilisateur, Etudiant, Enseignant, Administrateur, Responsab
 class UtilisateurSerializer(serializers.ModelSerializer):
     class Meta:
         model = Utilisateur
-        fields = ['email', 'nom', 'prenom', 'pseudo', 'tel','matricule','photo', 'empreinte_digitale', 'type', 'is_active']
+        fields = ['id','email', 'nom', 'prenom', 'pseudo', 'tel','matricule','photo', 'empreinte_digitale', 'type', 'is_active']
 
 class EtudiantSerializer(serializers.ModelSerializer):
     class Meta:
         model = Etudiant
-        fields = ['carte_etudiant', 'utilisateur']
+        fields = ['carte_etudiant','niveau', 'utilisateur']
 
-        def create(self, validated_data):
+    def create(self, validated_data):
             # Créer l'étudiant
             etudiant = Etudiant.objects.create(**validated_data)
 

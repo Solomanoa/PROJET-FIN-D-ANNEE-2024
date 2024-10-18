@@ -47,8 +47,46 @@ def get_utilisateurs(request):
             Q(type__icontains=search_query)     # Rechercher dans le type (admin, étudiant, etc.)
         )
 
-    serialized_data = UtilisateurSerializer(utilisateurs, many=True).data
-    return Response(serialized_data)
+    utilisateurs_data = []
+    for utilisateur in utilisateurs:
+        utilisateur_data = UtilisateurSerializer(utilisateur).data
+        
+        # Ajouter des données spécifiques en fonction du type d'utilisateur
+        if utilisateur.type == 'etudiant':
+            try:
+                etudiant = Etudiant.objects.get(utilisateur=utilisateur)
+                etudiant_data = EtudiantSerializer(etudiant).data
+                utilisateur_data['details'] = etudiant_data
+            except Etudiant.DoesNotExist:
+                utilisateur_data['details'] = None
+
+        elif utilisateur.type == 'enseignant':
+            try:
+                enseignant = Enseignant.objects.get(utilisateur=utilisateur)
+                enseignant_data = EnseignantSerializer(enseignant).data
+                utilisateur_data['details'] = enseignant_data
+            except Enseignant.DoesNotExist:
+                utilisateur_data['details'] = None
+
+        elif utilisateur.type == 'admin':
+            try:
+                administrateur = Administrateur.objects.get(utilisateur=utilisateur)
+                administrateur_data = AdministrateurSerializer(administrateur).data
+                utilisateur_data['details'] = administrateur_data
+            except Administrateur.DoesNotExist:
+                utilisateur_data['details'] = None
+
+        elif utilisateur.type == 'responsable':
+            try:
+                responsable = ResponsablePedagogique.objects.get(utilisateur=utilisateur)
+                responsable_data = ResponsablePedagogiqueSerializer(responsable).data
+                utilisateur_data['details'] = responsable_data
+            except ResponsablePedagogique.DoesNotExist:
+                utilisateur_data['details'] = None
+
+        utilisateurs_data.append(utilisateur_data)
+
+    return Response(utilisateurs_data)
 
 @api_view(['POST'])
 def create_utilisateur(request):
@@ -70,7 +108,8 @@ def create_utilisateur(request):
         if utilisateur.type == 'etudiant':
         
             etudiant_data = {
-                'utilisateur': utilisateur.id
+                'utilisateur': utilisateur.id,
+                'niveau': data.get('niveau')
             }
             etudiant_serializer = EtudiantSerializer(data=etudiant_data)
             if etudiant_serializer.is_valid(raise_exception=True):
@@ -248,29 +287,36 @@ def authentification_empreinte(request):
 @api_view(['POST'])
 def authenticate_qrcode(request):
     qr_data = request.data.get('qr_data')
-    
+    print(f'Données QR reçues: {qr_data}')  # Log pour voir les données reçues
+
     if qr_data:
         # Extraire l'ID de l'utilisateur à partir des données du QR code
-        user_id = extract_user_id(qr_data)  # Implémentez cette fonction selon vos données
+        user_id = extract_user_id(qr_data)
+        print(f'ID extrait du QR code: {user_id}')  # Log pour voir l'ID extrait
 
-        try:
-            etudiant = Etudiant.objects.get(utilisateur__id=user_id)
-            # Authentification réussie
-            user_info = {
-                'id': etudiant.utilisateur.id,
-                'nom': etudiant.utilisateur.nom,
-                'prenom': etudiant.utilisateur.prenom,
-                # Ajoutez d'autres champs si nécessaire
-            }
-            return Response(user_info, status=status.HTTP_200_OK)
-        except Etudiant.DoesNotExist:
-            return Response({'error': 'Utilisateur non trouvé.'}, status=status.HTTP_404_NOT_FOUND)
+        if user_id:
+            try:
+                etudiant = Etudiant.objects.get(utilisateur__id=user_id)
+                print(f'Utilisateur trouvé: {etudiant.utilisateur.nom} {etudiant.utilisateur.prenom}')  # Log pour voir l'utilisateur trouvé
+
+                # Authentification réussie
+                user_info = {
+                    'id': etudiant.utilisateur.id,
+                    'nom': etudiant.utilisateur.nom,
+                    'prenom': etudiant.utilisateur.prenom,
+                    # Ajoutez d'autres champs si nécessaire
+                }
+                print(f'Informations utilisateur renvoyées: {user_info}')  # Log pour voir ce qui est renvoyé
+                return Response(user_info, status=status.HTTP_200_OK)
+            except Etudiant.DoesNotExist:
+                print('Utilisateur non trouvé')  # Log en cas d'erreur
+                return Response({'error': 'Utilisateur non trouvé.'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            print('Erreur: ID utilisateur non trouvé dans le QR code')
     return Response({'error': 'Données QR invalides.'}, status=status.HTTP_400_BAD_REQUEST)
 
 def extract_user_id(qr_data):
-    # Cette fonction doit extraire l'ID de l'utilisateur du QR code
-    # Par exemple, si votre QR code est sous la forme "ID:1 | Nom:John", 
-    # alors vous pouvez faire le parsing ici.
+    # Extraction de l'ID depuis les données du QR code
     parts = qr_data.split('|')
     for part in parts:
         if part.startswith('ID:'):

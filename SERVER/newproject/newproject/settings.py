@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'gestion_utilisateur',
     'evaluation',
     'notification',
+    'enseigner',
+    'recommendation'
 ]
 
 MIDDLEWARE = [

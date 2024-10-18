@@ -18,5 +18,5 @@ urlpatterns = [
     path('utilisateurs/delete/<int:id>/', delete_utilisateur, name='delete_utilisateur'),  # Supprimer un utilisateur
     path('authenticate-face/', authenticate_face, name='authenticate_face'),  # Route d'authentification faciale
     path('authentification_empreinte/', authentification_empreinte, name='authentification_empreinte'),
-    path('authenticate_qrcode', authenticate_qrcode, name='authenticate_qrcode'),
+    path('authenticate-qrcode/', authenticate_qrcode, name='authenticate_qrcode'),
 ]
