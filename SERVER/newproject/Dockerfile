@@ -24,6 +24,7 @@ RUN apt-get install -y --fix-missing \
     python3-numpy \
     software-properties-common \
     zip \
+    libzbar-dev \
     && apt-get clean && rm -rf /tmp/* /var/tmp/*
 
 RUN cd ~ && \
@@ -38,4 +39,4 @@ RUN cd /newproject && \
 
 # Command to run your application
 # Replace `your_app.py` with the main file of your application
-CMD ["python", "manage.py", "runserver"]
+CMD ["python", "manage.py", "runserver", "0.0.0.0:3000"]
