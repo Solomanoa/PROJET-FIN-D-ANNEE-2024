@@ -1,17 +1,7 @@
 Django
 python-barcode
 djangorestframework
+django-cors-headers
 face_recognition
-dlib
-opencv-python
-<<<<<<< HEAD
-apt-get install libzbar-dev
-pip install zbarlight
-pip install Pillow
-pip install qrcode[pil]
-
-=======
-#apt-get install libzbar-dev
+qrcode
 zbarlight
-Pillow
->>>>>>> baad009afada3d2b5e12f8fc3646adb24323b8d1
