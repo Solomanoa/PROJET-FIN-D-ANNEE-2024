@@ -1,5 +1,3 @@
-# This is a sample Dockerfile you can modify to deploy your own app based on face_recognition
-
 FROM python:3.10.3-slim-bullseye
 
 RUN apt-get -y update
@@ -37,6 +35,4 @@ COPY . /newproject
 RUN cd /newproject && \
     pip3 install -r requirements.txt
 
-# Command to run your application
-# Replace `your_app.py` with the main file of your application
 CMD ["python", "manage.py", "runserver", "0.0.0.0:3000"]
