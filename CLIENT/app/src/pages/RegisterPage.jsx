@@ -11,7 +11,7 @@ const RegisterPage = () => {
     photo: null,
     empreinte_digitale: null,
     type: '',
-    carte_etudiant: null,
+    niveau: '',
     titre: '',
     role: '',
   });
@@ -117,11 +117,14 @@ const RegisterPage = () => {
 
       {/* Champs supplémentaires basés sur le type sélectionné */}
       {formData.type === 'etudiant' && (
-        <input
-          type="file"
-          name="carte_etudiant"
-          onChange={handleFileChange}
-        />
+        <select name="niveau" value={formData.niveau} onChange={handleInputChange}>
+        <option value="">Choisir un niveau</option>
+        <option value="L1">L1</option>
+        <option value="L2">L2</option>
+        <option value="L3">L3</option>
+        <option value="M1">M1</option>
+        <option value="M2">M2</option>
+      </select>
       )}
       {formData.type === 'enseignant' && (
         <input
