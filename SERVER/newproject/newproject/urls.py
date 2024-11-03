@@ -27,4 +27,3 @@ urlpatterns = [
     path('recommendation/', include('recommendation.urls')),
     path('evaluation/', include('evaluation.urls')),
 ]
-
