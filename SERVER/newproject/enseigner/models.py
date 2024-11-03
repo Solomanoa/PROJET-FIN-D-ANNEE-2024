@@ -1,5 +1,5 @@
 from django.db import models
-from gestion_utilisateur.models import Etudiant, Enseignant
+from gestion_utilisateur.models import Enseignant
 
 class Enseigner(models.Model):
     enseignant = models.ForeignKey(Enseignant, on_delete=models.CASCADE)
