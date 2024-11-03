@@ -25,5 +25,5 @@ urlpatterns = [
     path('notification/', include('notification.urls')),
     path('enseigner/', include('enseigner.urls')),
     path('recommendation/', include('recommendation.urls')),
+    path('evaluation/', include('evaluation.urls')),
 ]
-
