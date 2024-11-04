@@ -2,9 +2,16 @@ from django.db import models
 from gestion_utilisateur.models import Etudiant, Enseignant
 
 class Enseigner(models.Model):
-    enseignant = models.ForeignKey(Enseignant, on_delete=models.CASCADE)
-    etudiants = models.ManyToManyField(Etudiant)
+    enseignant = models.ForeignKey(Enseignant, on_delete=models.CASCADE, related_name='enseignements')
+    niveau = models.CharField(max_length=2, choices=[
+        ('L1', 'L1'),
+        ('L2', 'L2'),
+        ('L3', 'L3'),
+        ('M1', 'M1'),
+        ('M2', 'M2'),
+    ])
 
     def __str__(self):
-        niveaux_list = ', '.join(set([etudiant.niveau for etudiant in self.etudiants.all()]))
-        return f"{self.enseignant.nom} enseigne aux niveaux : {niveaux_list}"
+        return f"{self.enseignant} - {self.niveau}"
+
+    

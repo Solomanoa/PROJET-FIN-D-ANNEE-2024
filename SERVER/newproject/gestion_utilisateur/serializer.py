@@ -9,7 +9,7 @@ class UtilisateurSerializer(serializers.ModelSerializer):
 class EtudiantSerializer(serializers.ModelSerializer):
     class Meta:
         model = Etudiant
-        fields = ['carte_etudiant','niveau', 'utilisateur']
+        fields = ['id','carte_etudiant','niveau', 'utilisateur']
 
     def create(self, validated_data):
             # Créer l'étudiant
@@ -26,14 +26,14 @@ class EtudiantSerializer(serializers.ModelSerializer):
 class EnseignantSerializer(serializers.ModelSerializer):
     class Meta:
         model = Enseignant
-        fields = ['titre', 'utilisateur']
+        fields = ['id','titre', 'utilisateur']
 
 class AdministrateurSerializer(serializers.ModelSerializer):
     class Meta:
         model = Administrateur
-        fields = ['utilisateur']
+        fields = ['id','utilisateur']
 
 class ResponsablePedagogiqueSerializer(serializers.ModelSerializer):
     class Meta:
         model = ResponsablePedagogique
-        fields = ['role', 'utilisateur']
+        fields = ['id','role', 'utilisateur']
