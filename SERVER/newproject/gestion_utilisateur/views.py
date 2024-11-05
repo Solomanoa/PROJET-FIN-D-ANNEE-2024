@@ -216,6 +216,9 @@ def authenticate_face(request):
                                 'pseudo': user.pseudo,
                                 'tel': user.tel,
                                 'matricule': user.matricule,
+                                'type': user.type,
+                                'id': user.id,
+                                'photo': user.photo,
                             }
                             return JsonResponse({'message': 'Authentification réussie', 'user_info': user_info})
 
