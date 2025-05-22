@@ -1,0 +1,13 @@
+Django>=4.2
+djangorestframework
+Pillow
+django-cors-headers
+qrcode
+python-barcode
+djangorestframework
+face_recognition
+dlib
+opencv-python
+zbarlight
+
+

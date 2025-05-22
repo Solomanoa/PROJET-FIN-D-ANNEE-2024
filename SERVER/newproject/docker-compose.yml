@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  django:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persister la base de données SQLite
+      - ./data:/app/data
+      # Persister les fichiers statiques
+      - ./static:/app/static
+      # Persister les fichiers médias (uploads, etc.)
+      - ./media:/app/media
+    environment:
+      - DEBUG=True  # Changez à False pour la production
+      - ALLOWED_HOSTS=localhost,127.0.0.1,192.168.1.137
+    restart: unless-stopped
