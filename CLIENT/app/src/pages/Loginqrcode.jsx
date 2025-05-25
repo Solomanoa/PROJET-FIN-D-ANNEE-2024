@@ -5,99 +5,188 @@ import { useNavigate } from 'react-router-dom';
 
 const QrCodeAuthPage = () => {
   const [authResult, setAuthResult] = useState('');
-  const [userInfo, setUserInfo] = useState(null); // Stocker les infos de l'utilisateur authentifié
-  const [isWebcamVisible, setIsWebcamVisible] = useState(true); // Contrôle la visibilité de la webcam
+  const [userInfo, setUserInfo] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const webcamRef = useRef(null);
   const navigate = useNavigate();
 
-  // Fonction pour scanner le QR code
-  const scanQRCode = () => {
-    if (webcamRef.current) {
-      const imageSrc = webcamRef.current.getScreenshot();
-      const image = new Image();
-      image.src = imageSrc;
+  // Styles plein écran
+  const styles = {
+    container: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100vw',
+      height: '100vh',
+      background: '#121212',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: 'white',
+      fontFamily: 'Arial, sans-serif',
+      padding: '20px',
+      boxSizing: 'border-box'
+    },
+    title: {
+      fontSize: '1.8rem',
+      marginBottom: '30px',
+      textAlign: 'center'
+    },
+    webcamContainer: {
+      position: 'relative',
+      width: '100%',
+      maxWidth: '500px',
+      height: '300px',
+      borderRadius: '12px',
+      overflow: 'hidden',
+      marginBottom: '20px'
+    },
+    scanOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 2
+    },
+    scanBox: {
+      width: '70%',
+      maxWidth: '300px',
+      height: '300px',
+      border: '4px solid rgba(255, 255, 255, 0.3)',
+      borderRadius: '8px',
+      position: 'relative'
+    },
+    scanLine: {
+      position: 'absolute',
+      width: '100%',
+      height: '2px',
+      background: 'rgba(255, 0, 0, 0.8)',
+      animation: 'scan 2.5s infinite linear'
+    },
+    status: {
+      padding: '15px',
+      borderRadius: '8px',
+      margin: '20px 0',
+      background: 'rgba(255, 255, 255, 0.1)',
+      textAlign: 'center',
+      maxWidth: '500px',
+      width: '100%'
+    },
+    success: {
+      background: 'rgba(46, 213, 115, 0.2)',
+      border: '1px solid rgba(46, 213, 115, 0.5)'
+    },
+    error: {
+      background: 'rgba(255, 71, 87, 0.2)',
+      border: '1px solid rgba(255, 71, 87, 0.5)'
+    }
+  };
 
-      image.onload = () => {
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        canvas.width = image.width;
-        canvas.height = image.height;
-        context.drawImage(image, 0, 0);
-        
+  const scanQRCode = () => {
+    if (isLoading || !webcamRef.current) return;
+
+    const imageSrc = webcamRef.current.getScreenshot();
+    if (!imageSrc) return;
+
+    const image = new Image();
+    image.src = imageSrc;
+
+    image.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const context = canvas.getContext('2d');
+      context.drawImage(image, 0, 0);
+
+      try {
         const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
         const code = jsQR(imageData.data, imageData.width, imageData.height);
-
+        
         if (code) {
-          handleAuth(code.data); // Lancer l'authentification avec les données du QR code
+          handleAuth(code.data);
         }
-      };
-    }
+      } catch (error) {
+        console.error('Erreur de scan:', error);
+        setAuthResult('Erreur lors du scan');
+      }
+    };
   };
 
   const handleAuth = async (qrData) => {
-    const formData = new FormData();
-    formData.append('qr_data', qrData); // Ajoutez les données du QR code au FormData
-  
+    setIsLoading(true);
+    setAuthResult('Validation en cours...');
+
     try {
       const response = await fetch('http://localhost:8000/utilisateur/authenticate-qrcode/', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ qr_data: qrData }),
       });
-  
+
       const data = await response.json();
-      console.log('Response data:', data);  // Log pour voir la réponse
-  
-      // Vérifiez directement si les données sont présentes
-      if (data && data.id) {
-        setUserInfo(data);  // Stocke les informations de l'utilisateur
-        setAuthResult('Authentification réussie');
-        
-        // Rediriger vers la page dashboard après 2 secondes
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 2000);
+
+      if (data?.id) {
+        setUserInfo(data);
+        setAuthResult('Authentification réussie !');
+        setTimeout(() => navigate('/dashboard'), 2000);
       } else {
-        setAuthResult('Échec de l\'authentification');
+        setAuthResult(data?.message || 'Échec de l\'authentification');
       }
     } catch (error) {
-      setAuthResult('Échec de l\'authentification. Veuillez réessayer.');
+      setAuthResult('Erreur de connexion au serveur');
+      console.error('Erreur:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
-  
-  // Capture automatiquement et scanne le QR code toutes les 5 secondes
-  useEffect(() => {
-    const timer = setInterval(() => {
-      scanQRCode();
-    }, 5000);  // Scanne toutes les 5 secondes
 
-    return () => clearInterval(timer);  // Nettoie le timer si le composant est démonté
-  }, []);
+  useEffect(() => {
+    const timer = setInterval(scanQRCode, 2000);
+    return () => clearInterval(timer);
+  }, [isLoading]);
 
   return (
-    <div>
-      <h1>Authentification par QR Code</h1>
-      {isWebcamVisible && (
+    <div style={styles.container}>
+      <h1 style={styles.title}>Authentification QR Code</h1>
+      
+      <div style={styles.webcamContainer}>
         <Webcam
           audio={false}
           ref={webcamRef}
           screenshotFormat="image/jpeg"
-          width={320}
-          height={240}
+          width="100%"
+          height="100%"
+          style={{ objectFit: 'cover' }}
+          videoConstraints={{ facingMode: 'environment' }}
         />
-      )}
-
-      {authResult && <p>{authResult}</p>}
-
-      {/* Affichage des informations de l'utilisateur authentifié */}
-      {userInfo && (
-        <div>
-          <h2>Informations de l'utilisateur :</h2>
-         
-          <p>Nom : {userInfo.nom}</p>
-          <p>Prénom : {userInfo.prenom}</p>
-        
+        <div style={styles.scanOverlay}>
+          <div style={styles.scanBox}>
+            <div style={styles.scanLine}></div>
+          </div>
         </div>
-      )}
+      </div>
+
+      <div style={{
+        ...styles.status,
+        ...(authResult.includes('réussie') ? styles.success : styles.error)
+      }}>
+        {authResult || 'Positionnez le QR code dans le cadre'}
+        {isLoading && <div>Veuillez patienter...</div>}
+      </div>
+
+      <style>{`
+        @keyframes scan {
+          0% { top: 0; }
+          100% { top: 100%; }
+        }
+      `}</style>
     </div>
   );
 };

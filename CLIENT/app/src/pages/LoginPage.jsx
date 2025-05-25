@@ -1,31 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Webcam from 'react-webcam';
-import { useNavigate } from 'react-router-dom';  // Importez useNavigate pour la redirection
-
+import { useNavigate } from 'react-router-dom';
 
 const LoginPage = () => {
+  // Vos états et fonctions existants restent inchangés
   const [image, setImage] = useState(null);
   const [authResult, setAuthResult] = useState('');
-  const [userInfo, setUserInfo] = useState(null); // Stocker les infos de l'utilisateur authentifié
-  const [isWebcamVisible, setIsWebcamVisible] = useState(true); // Contrôle la visibilité de la webcam
+  const [userInfo, setUserInfo] = useState(null);
+  const [isWebcamVisible, setIsWebcamVisible] = useState(true);
   const webcamRef = useRef(null);
   const navigate = useNavigate();
 
-  // Capture l'image depuis la webcam et la transforme en Blob
   const capture = () => {
     const imageSrc = webcamRef.current.getScreenshot();
-
-    // Conversion de l'image base64 en Blob (objet binaire)
     fetch(imageSrc)
       .then(res => res.blob())
       .then(blob => {
-        setImage(blob);  // Enregistre l'image capturée sous forme de Blob
-        setIsWebcamVisible(false);  // Cache la webcam après la capture
-        handleAuth(blob);  // Lancer l'authentification immédiatement après la capture
+        setImage(blob);
+        setIsWebcamVisible(false);
+        handleAuth(blob);
       });
   };
 
-  // Envoie l'image capturée au backend pour authentification
   const handleAuth = async (capturedImage) => {
     if (!capturedImage) {
       setAuthResult('Aucune image capturée');
@@ -33,7 +29,7 @@ const LoginPage = () => {
     }
 
     const formData = new FormData();
-    formData.append('image', capturedImage, 'capture.jpg'); // Ajout d'un nom de fichier par défaut
+    formData.append('image', capturedImage, 'capture.jpg');
 
     try {
       const response = await fetch('http://localhost:8000/utilisateur/authenticate-face/', {
@@ -41,23 +37,16 @@ const LoginPage = () => {
         body: formData,
       });
 
-      if (!response.ok) {
-        throw new Error('Échec de l\'authentification');
-      }
+      if (!response.ok) throw new Error('Échec de l\'authentification');
 
       const data = await response.json();
 
       if (data.user_info) {
-        setUserInfo(data.user_info);  // Stocke les informations de l'utilisateur
-        setAuthResult(data.message);  // Affiche le message d'authentification réussie
-        
-        // Rediriger vers la page dashboard après 2 secondes
-        setTimeout(() => {
-          navigate('/dashboard');  // Redirige vers la page "dashboard"
-        }, 2000);
-      
+        setUserInfo(data.user_info);
+        setAuthResult(data.message);
+        //setTimeout(() => navigate('/dashboard'), 2000);
       } else {
-        setAuthResult(data.message);  // Affiche le message d'échec d'authentification
+        setAuthResult(data.message);
       }
     } catch (error) {
       setAuthResult('Échec de l\'authentification. Veuillez réessayer.');
@@ -66,39 +55,93 @@ const LoginPage = () => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (webcamRef.current) {
-        capture();
-      }
-    }, 5000);  // Capture toutes les 5 secondes
-  
-    return () => clearInterval(interval);  // Nettoie l'intervalle si le composant est démonté
-  }, []);
+      if (webcamRef.current && isWebcamVisible) capture();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [isWebcamVisible]);
+
+  // Styles CSS en plein écran
+  const styles = {
+    fullscreenContainer: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100vw',
+      height: '100vh',
+      backgroundColor: '#121212',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: 'white',
+      zIndex: 1000
+    },
+    webcamWrapper: {
+      width: '100%',
+      maxWidth: '800px',
+      height: '60vh',
+      position: 'relative',
+      overflow: 'hidden',
+      borderRadius: '8px',
+      boxShadow: '0 0 20px rgba(0, 0, 0, 0.5)'
+    },
+    title: {
+      fontSize: '2rem',
+      marginBottom: '2rem',
+      textAlign: 'center'
+    },
+    statusMessage: {
+      padding: '1rem',
+      margin: '1rem 0',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      borderRadius: '4px',
+      textAlign: 'center'
+    },
+    userInfo: {
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      padding: '1.5rem',
+      borderRadius: '8px',
+      marginTop: '2rem',
+      maxWidth: '800px',
+      width: '100%'
+    },
+    instruction: {
+      marginTop: '1rem',
+      color: 'rgba(255, 255, 255, 0.7)',
+      fontSize: '0.9rem'
+    }
+  };
+
   return (
-    <div>
-      <h1>Authentification Faciale</h1>
-      {isWebcamVisible && (
-        <Webcam
-          audio={false}
-          ref={webcamRef}
-          screenshotFormat="image/jpeg"
-          width={320}
-          height={240}
-        />
+    <div style={styles.fullscreenContainer}>
+      <h1 style={styles.title}>Authentification Faciale</h1>
+      
+      {isWebcamVisible ? (
+        <>
+          <div style={styles.webcamWrapper}>
+            <Webcam
+              audio={false}
+              ref={webcamRef}
+              screenshotFormat="image/jpeg"
+              width="100%"
+              height="100%"
+              style={{ objectFit: 'cover' }}
+              mirrored
+            />
+          </div>
+          <p style={styles.instruction}>Positionnez votre visage dans le cadre</p>
+        </>
+      ) : (
+        <div style={styles.statusMessage}>
+          {authResult || "Analyse en cours..."}
+        </div>
       )}
 
-      
-      {authResult && <p>{authResult}</p>}
-
-      {/* Affichage des informations de l'utilisateur authentifié */}
       {userInfo && (
-        <div>
-          <h2>Informations de l'utilisateur :</h2>
-          <p>Email : {userInfo.email}</p>
-          <p>Nom : {userInfo.nom}</p>
-          <p>Prénom : {userInfo.prenom}</p>
-          <p>Pseudo : {userInfo.pseudo}</p>
-          <p>Téléphone : {userInfo.tel}</p>
-          <p>Matricule : {userInfo.matricule}</p>
+        <div style={styles.userInfo}>
+          <h2>Bienvenue, {userInfo.prenom} {userInfo.nom}</h2>
+          <p>Pseudo: {userInfo.pseudo}</p>
+          <p>Matricule: {userInfo.matricule}</p>
         </div>
       )}
     </div>
